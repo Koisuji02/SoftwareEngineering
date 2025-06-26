@@ -1,0 +1,17 @@
+x- constants:
+  # example of an anchor (initialized with &nome valore)
+  port: &app_port 8080 
+services: 
+  web:
+    container_name: my-application 
+    build:
+      context: . 
+      dockerfile: ./Dockerfile 
+    ports:
+      - "9000:8080" 
+    volumes:
+      - .:/usr/src/app 
+    environment:
+      # anchor usata (*nome)
+      PORT: *app_port 
+    command: node my-node-app/app.js
