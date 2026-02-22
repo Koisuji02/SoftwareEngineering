@@ -1,0 +1,58 @@
+x-constants:
+  backend_host: &backend_host backend
+  backend_port: &backend_port 5000
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: geocontrol-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: ./docker/backend/Dockerfile
+    container_name: geocontrol-backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DB_TYPE: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USERNAME: geocontrol_user
+      DB_PASSWORD: secret
+      DB_NAME: geocontrol_db
+      NODE_ENV: production
+  frontend:
+    image: smpolito/geocontrolui:latest
+    container_name: geocontrol-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/env-vars.json:/app/dist/config.json
+    environment:
+      - SERVER_HOST=localhost
+      - SERVER_PORT=5000
+
+volumes:
+  mysql_data:
